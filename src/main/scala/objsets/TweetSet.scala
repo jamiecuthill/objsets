@@ -67,7 +67,7 @@ abstract class TweetSet {
    * Question: Should we implment this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-  def mostRetweeted: Tweet = mostRetweetedAcc(null)
+  def mostRetweeted: Tweet
 
   def mostRetweetedAcc(currMax: Tweet): Tweet
 
@@ -114,7 +114,7 @@ class Empty extends TweetSet {
 
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = acc
 
-  override def mostRetweeted: Tweet = throw new NoSuchElementException
+  def mostRetweeted: Tweet = throw new NoSuchElementException
 
   def mostRetweetedAcc(currMax: Tweet): Tweet = currMax
 
@@ -137,7 +137,9 @@ class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
 
   def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = right.filterAcc(p, left.filterAcc(p, if (p(elem)) acc.incl(elem) else acc))
 
-  def mostRetweetedAcc(currMax: Tweet): Tweet = right.mostRetweetedAcc(left.mostRetweetedAcc(if (currMax != null && currMax.retweets > elem.retweets) currMax else elem))
+  def mostRetweeted: Tweet = mostRetweetedAcc(new Empty)
+
+  def mostRetweetedAcc(currMax: Tweet): Tweet = right.mostRetweetedAcc(left.mostRetweetedAcc(if (currMax.retweets > elem.retweets) currMax else elem))
 
   def descendingByRetweet: TweetList = {
     val max = mostRetweeted
@@ -197,14 +199,15 @@ object GoogleVsApple {
   val google = List("android", "Android", "galaxy", "Galaxy", "nexus", "Nexus")
   val apple = List("ios", "iOS", "iphone", "iPhone", "ipad", "iPad")
 
-  lazy val googleTweets: TweetSet = ???
-  lazy val appleTweets: TweetSet = ???
+  lazy val googleTweets: TweetSet = TweetReader.allTweets.filter((t: Tweet) => google.exists(t.text.contains))
+
+  lazy val appleTweets: TweetSet = TweetReader.allTweets.filter((t: Tweet) => apple.exists(t.text.contains))
 
   /**
    * A list of all tweets mentioning a keyword from either apple or google,
    * sorted by the number of retweets.
    */
-  lazy val trending: TweetList = ???
+  lazy val trending: TweetList = googleTweets.union(appleTweets).descendingByRetweet
 }
 
 object Main extends App {
